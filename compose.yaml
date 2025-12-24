@@ -1,0 +1,9 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    container_name: bot
+    volumes:
+      - ./src:/app/src
+    restart: no
