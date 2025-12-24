@@ -1,21 +1,27 @@
 import asyncio
 import logging
+from random import shuffle
 
-from aiogram import Dispatcher, Router
-from aiogram.filters import CommandStart
+from aiogram import Dispatcher, F, Router
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
+from env import get_int_env
 from src.bot import bot
 from src.db.actions import (
     create_player,
+    get_all_players,
     get_player,
     set_name,
     set_negative,
     set_positive,
+    set_target,
 )
+
+ADMIN_CHAT_ID = get_int_env("ADMIN_CHAT_ID")
 
 router = Router()
 
@@ -82,6 +88,48 @@ async def save_negative(message: Message, state: FSMContext) -> None:
         "Чтобы заполнить анкету заново, напиши /start\n"
         "Если все правильно, жди начала игры"
     )
+
+
+@router.message(Command("check"), F.chat.id == ADMIN_CHAT_ID)
+async def check(message: Message):
+    all_players = await get_all_players()
+    for player in all_players:
+        if not player.name:
+            await message.answer(
+                f"Неизвестно имя пользователя {player.chat_id}"
+            )
+        if not player.positive:
+            await message.answer(f"Неизвестно + {player.name}")
+        if not player.negative:
+            await message.answer(f"Неизвестно - {player.name}")
+    await message.answer(f"Всего {len(all_players)}")
+
+
+def check_arr(arr: list[int]):
+    for i in range(len(arr)):
+        if i == arr[i]:
+            return False
+    return True
+
+
+@router.message(Command("play"), F.chat.id == ADMIN_CHAT_ID)
+async def play(message: Message):
+    all_players = await get_all_players()
+    arr = list(range(len(all_players)))
+    while not check_arr(arr):
+        shuffle(arr)
+    for i in range(len(arr)):
+        await set_target(all_players[i].id, arr[i])
+        target = all_players[arr[i]]
+        await bot.send_message(
+            all_players[i].chat_id,
+            (
+                f"Вы дарите порадок {target.name}.\n"
+                f"Дарить: {target.positive}\n"
+                f"Не дарить: {target.negative}"
+            ),
+        )
+    await message.answer("Все сообщения отправлены")
 
 
 async def main():

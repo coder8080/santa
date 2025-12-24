@@ -14,3 +14,4 @@ class Player(BaseModel):
 
 
 player_adapter = TypeAdapter(Player)
+player_list_adapter = TypeAdapter(list[Player])

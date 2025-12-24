@@ -1,9 +1,14 @@
 from src.db.client import client
-from src.db.models import Player, player_adapter
+from src.db.models import Player, player_adapter, player_list_adapter
 
 
 async def get_player(chat_id: int) -> Player | None:
-    res = await client.table("player").select("*").eq("chat_id", chat_id).execute()
+    res = (
+        await client.table("player")
+        .select("*")
+        .eq("chat_id", chat_id)
+        .execute()
+    )
     if not res.data:
         return None
     player = player_adapter.validate_python(res.data[0])
@@ -15,7 +20,12 @@ async def create_player(chat_id: int) -> None:
 
 
 async def set_name(chat_id: int, name: str) -> None:
-    await client.table("player").update({"name": name}).eq("chat_id", chat_id).execute()
+    await (
+        client.table("player")
+        .update({"name": name})
+        .eq("chat_id", chat_id)
+        .execute()
+    )
 
 
 async def set_positive(chat_id: int, positive: str) -> None:
@@ -33,4 +43,16 @@ async def set_negative(chat_id: int, negative: str) -> None:
         .update({"negative": negative})
         .eq("chat_id", chat_id)
         .execute()
+    )
+
+
+async def get_all_players() -> list[Player]:
+    res = await client.table("player").select("*").execute()
+    players = player_list_adapter.validate_python(res.data)
+    return players
+
+
+async def set_target(id: int, target: int):
+    await (
+        client.table("player").update({"target": target}).eq("id", id).execute()
     )
