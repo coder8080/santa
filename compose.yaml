@@ -7,3 +7,4 @@ services:
     volumes:
       - ./src:/app/src
     restart: no
+    env_file: .env

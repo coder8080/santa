@@ -21,8 +21,8 @@ jobs:
           enable-cache: true
       - name: Install deps
         run: uv sync --all-groups
-      - name: BasedPyright
-        run: ./.venv/bin/basedpyright
+      - name: Pyright
+        run: ./.venv/bin/pyright
       - name: Ruff
         run: ./.venv/bin/ruff check
 

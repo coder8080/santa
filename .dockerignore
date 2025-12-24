@@ -211,3 +211,4 @@ docker
 .gitignore
 .pre-commit-config.yaml
 compose.yaml
+.env.example
