@@ -25,6 +25,8 @@ from src.db.actions import (
 
 ADMIN_CHAT_ID = get_int_env("ADMIN_CHAT_ID")
 
+logger = logging.getLogger(__name__)
+
 router = Router()
 
 
@@ -114,23 +116,38 @@ def check_arr(arr: list[int]):
     return True
 
 
-@router.message(Command("play"), F.chat.id == ADMIN_CHAT_ID)
-async def play(message: Message):
+@router.message(Command("dist"), F.chat.id == ADMIN_CHAT_ID)
+async def dist(message: Message):
     all_players = await get_all_players()
     arr = list(range(len(all_players)))
     while not check_arr(arr):
         shuffle(arr)
     for i in range(len(arr)):
         await set_target(all_players[i].id, arr[i])
-        target = all_players[arr[i]]
-        await bot.send_message(
-            all_players[i].chat_id,
-            (
-                f"Вы дарите порадок {target.name}.\n"
-                f"Дарить: {target.positive}\n"
-                f"Не дарить: {target.negative}"
-            ),
+    await message.answer("Готово")
+
+
+@router.message(Command("send"), F.chat.id == ADMIN_CHAT_ID)
+async def play(message: Message):
+    assert message.text
+    parts = message.text.split()
+    all_players = await get_all_players()
+    players_map = {player.id: player for player in all_players}
+    for player in all_players:
+        assert player.target is not None
+        target = players_map[player.target]
+        text = (
+            f"Вы дарите порадок {target.name}.\n"
+            f"Дарить: {target.positive}\n"
+            f"Не дарить: {target.negative}"
         )
+        logger.info(text)
+
+        if len(parts) == 2:
+            await bot.send_message(
+                player.chat_id,
+                text,
+            )
     await message.answer("Все сообщения отправлены")
 
 
