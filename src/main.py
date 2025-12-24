@@ -6,8 +6,10 @@ from aiogram import Dispatcher, F, Router
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.storage.redis import RedisStorage
 from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from redis.asyncio.client import Redis
 
 from env import get_int_env
 from src.bot import bot
@@ -134,7 +136,8 @@ async def play(message: Message):
 
 async def main():
     logging.basicConfig(level=logging.INFO)
-    dp = Dispatcher()
+    storage = RedisStorage(redis=Redis(host="redis", port=6379))
+    dp = Dispatcher(storage=storage)
     dp.include_router(router)
     await dp.start_polling(bot)
 

@@ -8,3 +8,12 @@ services:
       - ./src:/app/src
     restart: no
     env_file: .env
+
+  redis:
+    image: redis:8.4.0-alpine
+    container_name: redis
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
