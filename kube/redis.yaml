@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-data
+  namespace: santa
+  labels:
+    app: santa
+    component: redis-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: santa
+  labels:
+    app: santa
+    component: redis
+spec:
+  selector:
+    matchLabels:
+      app: santa
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: santa
+        component: redis
+    spec:
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis-data
+      containers:
+        - name: redis
+          image: redis:8.4.0-alpine
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: santa
+  labels:
+    app: santa
+    component: redis
+spec:
+  selector:
+    app: santa
+    component: redis
+  ports:
+    - port: 6379

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bot
+  namespace: santa
+  labels:
+    app: santa
+    component: bot
+spec:
+  selector:
+    matchLabels:
+      app: santa
+      component: bot
+  template:
+    metadata:
+      labels:
+        app: santa
+        component: bot
+    spec:
+      containers:
+        - name: bot
+          image: coder80/santa:latest
+          imagePullPolicy: Always
+          env:
+            - name: TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: TOKEN
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: SUPABASE_URL
+            - name: SUPABASE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: SUPABASE_KEY
+            - name: ADMIN_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: secret
+                  key: ADMIN_CHAT_ID
