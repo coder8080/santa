@@ -2,7 +2,6 @@ FROM astral/uv:python3.13-alpine
 
 RUN apk update && apk add g++ libc-dev
 
-ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
 WORKDIR /app
@@ -18,4 +17,4 @@ ENV PYTHONPATH="/app"
 
 ENTRYPOINT []
 
-CMD ["uv", "run", "watchmedo", "auto-restart", "--patterns=*.py", "--debounce-interval=2", "--", "python", "src/main.py"]
+CMD ["uv", "run", "watchmedo", "auto-restart", "--patterns=*.py", "--debounce-interval", "2", "--recursive", "--", "python", "-u", "src/main.py"]

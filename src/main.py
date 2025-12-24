@@ -3,16 +3,85 @@ import logging
 
 from aiogram import Dispatcher, Router
 from aiogram.filters import CommandStart
-from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from src.bot import bot
+from src.db.actions import (
+    create_player,
+    get_player,
+    set_name,
+    set_negative,
+    set_positive,
+)
 
 router = Router()
 
 
+class Form(StatesGroup):
+    idle = State()
+    name = State()
+    positive = State()
+    negative = State()
+
+
 @router.message(CommandStart())
-async def start(message: Message):
-    await message.answer("Hello world")
+async def start(message: Message, state: FSMContext) -> None:
+    assert message.text is not None
+    parts = message.text.split()
+    correct_code = len(parts) == 2 and parts[1] == "123"
+    player = await get_player(message.chat.id)
+    if not correct_code and player is None:
+        await message.answer(
+            "Извините, этот бот пока приватный. Вы можете написать админу: @coder8080"
+        )
+        return
+
+    assert message.from_user
+    if player is None:
+        await create_player(message.chat.id)
+    await state.set_state(Form.name)
+    name = f"{message.from_user.first_name} {message.from_user.last_name}"
+    builder = ReplyKeyboardBuilder()
+    builder.button(text=name)
+    markup = builder.as_markup(resize_keyboard=True)
+    await message.answer("Привет. Напиши свое имя", reply_markup=markup)
+
+
+@router.message(Form.name)
+async def save_name(message: Message, state: FSMContext) -> None:
+    assert message.text
+    await set_name(message.chat.id, message.text)
+    await state.set_state(Form.positive)
+    await message.answer(
+        "Напиши, что хочешь получить", reply_markup=ReplyKeyboardRemove()
+    )
+
+
+@router.message(Form.positive)
+async def save_positive(message: Message, state: FSMContext) -> None:
+    assert message.text
+    await set_positive(message.chat.id, message.text)
+    await state.set_state(Form.negative)
+    await message.answer("Теперь напиши, что не стоит дарить")
+
+
+@router.message(Form.negative)
+async def save_negative(message: Message, state: FSMContext) -> None:
+    assert message.text
+    await set_negative(message.chat.id, message.text)
+    await state.set_state(Form.idle)
+    player = await get_player(message.chat.id)
+    assert player
+    await message.answer(
+        f"Вот что сохранено:\n\nИмя: {player.name or '-'}\n"
+        f"Дарить: {player.positive or '-'}\n"
+        f"Не дарить: {player.negative or ''}\n\n"
+        "Чтобы заполнить анкету заново, напиши /start\n"
+        "Если все правильно, жди начала игры"
+    )
 
 
 async def main():
