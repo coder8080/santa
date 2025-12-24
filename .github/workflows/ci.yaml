@@ -50,3 +50,13 @@ jobs:
           tags: |
             ${{ secrets.DOCKER_USER }}/santa:latest
             ${{ secrets.DOCKER_USER }}/santa:${{ github.sha }}
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions-hub/kubectl@master
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBECTL }}
+        with:
+          args: -n santa set image deployments/bot bot=${{ secrets.DOCKER_USER }}/santa:${{ github.sha }}
