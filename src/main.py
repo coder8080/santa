@@ -7,7 +7,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.redis import RedisStorage
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from redis.asyncio.client import Redis
 
@@ -35,6 +35,12 @@ class Form(StatesGroup):
     name = State()
     positive = State()
     negative = State()
+
+
+def dont_know_keyboard() -> ReplyKeyboardMarkup:
+    builder = ReplyKeyboardBuilder()
+    builder.button(text="Не знаю")
+    return builder.as_markup(resize_keyboard=True)
 
 
 @router.message(CommandStart())
@@ -66,7 +72,7 @@ async def save_name(message: Message, state: FSMContext) -> None:
     await set_name(message.chat.id, message.text)
     await state.set_state(Form.positive)
     await message.answer(
-        "Напиши, что хочешь получить", reply_markup=ReplyKeyboardRemove()
+        "Напиши, что хочешь получить", reply_markup=dont_know_keyboard()
     )
 
 
@@ -75,7 +81,9 @@ async def save_positive(message: Message, state: FSMContext) -> None:
     assert message.text
     await set_positive(message.chat.id, message.text)
     await state.set_state(Form.negative)
-    await message.answer("Теперь напиши, что не стоит дарить")
+    await message.answer(
+        "Теперь напиши, что не стоит дарить", reply_markup=dont_know_keyboard()
+    )
 
 
 @router.message(Form.negative)
@@ -90,7 +98,8 @@ async def save_negative(message: Message, state: FSMContext) -> None:
         f"Дарить: {player.positive or '-'}\n"
         f"Не дарить: {player.negative or ''}\n\n"
         "Чтобы заполнить анкету заново, напиши /start\n"
-        "Если все правильно, жди начала игры"
+        "Если все правильно, жди начала игры",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
